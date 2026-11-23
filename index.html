@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>KIBO D冊教學影片｜檢視用</title>
+<style>
+  :root {
+    --bg: #f6f4ef; --card: #ffffff; --ink: #22262b; --muted: #6b7178;
+    --line: #e2ded5; --accent: #e8730c; --accent-ink: #ffffff; --stage: #14171a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #16181b; --card: #1f2226; --ink: #ecebe7; --muted: #9aa0a6;
+      --line: #30343a; --accent: #f08a2c; --accent-ink: #1a1206; --stage: #000; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", system-ui, sans-serif; line-height: 1.5; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 16px 48px; }
+  header { padding: 22px 0 14px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; }
+  h1 { font-size: 1.35rem; margin: 0; }
+  header p { margin: 0; color: var(--muted); font-size: .9rem; }
+
+  .player { background: var(--card); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+  .player video { display: block; width: 100%; aspect-ratio: 16 / 9; background: var(--stage); }
+  .bar { display: flex; align-items: center; gap: 10px; padding: 10px 12px; }
+  .now { flex: 1; min-width: 0; }
+  .now small { display: block; color: var(--muted); font-size: .78rem; }
+  .now strong { display: block; font-size: 1.05rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  button { font: inherit; cursor: pointer; }
+  .nav { border: 1px solid var(--line); background: transparent; color: var(--ink);
+    border-radius: 999px; padding: 7px 14px; white-space: nowrap; }
+  .nav:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .nav:disabled { opacity: .35; cursor: default; }
+  .opts { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 0 12px 12px; color: var(--muted); font-size: .85rem; }
+  .opts label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+  .opts select { font: inherit; color: var(--ink); background: var(--card); border: 1px solid var(--line); border-radius: 6px; padding: 2px 6px; }
+
+  h2 { font-size: 1rem; margin: 26px 0 10px; display: flex; align-items: center; gap: 8px; }
+  h2::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  @media (max-width: 860px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+  .card { text-align: left; padding: 0; border: 2px solid transparent; border-radius: 12px; overflow: hidden;
+    background: var(--card); color: var(--ink); box-shadow: 0 0 0 1px var(--line); }
+  .card:hover { box-shadow: 0 0 0 1px var(--accent); }
+  .card.active { border-color: var(--accent); box-shadow: none; }
+  .thumb { position: relative; aspect-ratio: 16 / 9; background: var(--stage); }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .dur { position: absolute; right: 6px; bottom: 6px; background: rgba(0,0,0,.72); color: #fff;
+    font-size: .72rem; padding: 1px 6px; border-radius: 4px; font-variant-numeric: tabular-nums; }
+  .playing { position: absolute; left: 6px; top: 6px; background: var(--accent); color: var(--accent-ink);
+    font-size: .72rem; padding: 1px 7px; border-radius: 4px; display: none; }
+  .card.active .playing { display: block; }
+  .meta { padding: 8px 10px 10px; }
+  .meta small { color: var(--muted); font-size: .76rem; }
+  .meta div { font-weight: 600; font-size: .95rem; }
+  footer { margin-top: 32px; color: var(--muted); font-size: .8rem; text-align: center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>KIBO D冊教學影片</h1>
+    <p>共 16 課｜暫時提供檢視用，請勿轉傳</p>
+  </header>
+
+  <section class="player">
+    <video id="v" controls playsinline preload="metadata"></video>
+    <div class="bar">
+      <button class="nav" id="prev">‹ 上一課</button>
+      <div class="now"><small id="nowUnit"></small><strong id="nowTitle"></strong></div>
+      <button class="nav" id="next">下一課 ›</button>
+    </div>
+    <div class="opts">
+      <label><input type="checkbox" id="auto" checked> 播完自動接下一課</label>
+      <label>播放速度
+        <select id="rate"><option>0.75</option><option selected>1</option><option>1.25</option><option>1.5</option><option>2</option></select>
+      </label>
+    </div>
+  </section>
+
+  <div id="list"></div>
+  <footer>影片為網頁用 720p 壓縮版，畫質略低於原始 1080p 成片。</footer>
+</div>
+
+<script>
+const UNITS = ["第 1 單元", "第 2 單元", "第 3 單元", "第 4 單元"];
+const LESSONS = [
+  ["d1-1","我是小幫手",209],["d1-2","親愛的奶奶",238],["d1-3","爸爸去上班",187],["d1-4","我的媽媽是超人",214],
+  ["d2-1","世界真奇妙",228],["d2-2","環遊世界",248],["d2-3","來玩大富翁",241],["d2-4","有趣的節日",240],
+  ["d3-1","美麗的天空",246],["d3-2","與KIBO共舞",262],["d3-3","小小花仙子",243],["d3-4","魔法寶盒",263],
+  ["d4-1","合作的螞蟻",231],["d4-2","小蜜蜂勤做工",264],["d4-3","勇敢的狗狗",255],["d4-4","小鷹快飛",253]
+].map(([id, title, sec]) => ({ id, title, sec, code: id.slice(1), unit: +id[1] - 1 }));
+
+const $ = s => document.querySelector(s);
+const v = $("#v"), list = $("#list");
+const mmss = s => Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+let cur = -1;
+
+UNITS.forEach((name, u) => {
+  const h = document.createElement("h2"); h.textContent = name; list.appendChild(h);
+  const g = document.createElement("div"); g.className = "grid"; list.appendChild(g);
+  LESSONS.forEach((l, i) => {
+    if (l.unit !== u) return;
+    const b = document.createElement("button");
+    b.className = "card"; b.dataset.i = i;
+    b.innerHTML = `<div class="thumb"><img loading="lazy" src="posters/${l.id}.jpg" alt="">
+      <span class="playing">播放中</span><span class="dur">${mmss(l.sec)}</span></div>
+      <div class="meta"><small>D冊 ${l.code}</small><div>${l.title}</div></div>`;
+    b.onclick = () => select(i, true);
+    g.appendChild(b);
+  });
+});
+
+function select(i, play) {
+  if (i < 0 || i >= LESSONS.length) return;
+  cur = i;
+  const l = LESSONS[i];
+  v.poster = `posters/${l.id}.jpg`;
+  v.src = `videos/${l.id}.mp4`;
+  v.playbackRate = +$("#rate").value;
+  $("#nowUnit").textContent = `${UNITS[l.unit]}｜D冊 ${l.code}`;
+  $("#nowTitle").textContent = l.title;
+  $("#prev").disabled = i === 0;
+  $("#next").disabled = i === LESSONS.length - 1;
+  document.querySelectorAll(".card").forEach(c => c.classList.toggle("active", +c.dataset.i === i));
+  history.replaceState(null, "", "#" + l.id);
+  document.title = `D冊 ${l.code} ${l.title}｜KIBO 教學影片`;
+  if (play) { v.play().catch(() => {}); $(".player").scrollIntoView({ behavior: "smooth", block: "start" }); }
+}
+
+$("#prev").onclick = () => select(cur - 1, true);
+$("#next").onclick = () => select(cur + 1, true);
+$("#rate").onchange = e => v.playbackRate = +e.target.value;
+v.addEventListener("ended", () => { if ($("#auto").checked && cur < LESSONS.length - 1) select(cur + 1, true); });
+
+const start = LESSONS.findIndex(l => l.id === location.hash.slice(1));
+select(start < 0 ? 0 : start, false);
+</script>
+</body>
+</html>
